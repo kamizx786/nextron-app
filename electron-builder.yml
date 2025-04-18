@@ -1,0 +1,26 @@
+# appId: com.example.wheat_leaf
+# productName: Wheat Leaf Disease Detection
+# copyright: Copyright © 2025
+# directories:
+#   output: dist
+#   buildResources: resources
+# files:
+#   - from: .
+#     filter:
+#       - package.json
+#       - app
+#       - resources
+#       - src/types
+# extraResources:
+#   - from: resources
+#     to: resources
+#     filter:
+#       - "**/*"
+# nsis:
+#     include: installer.nsh
+#     oneClick: false
+#     allowElevation: true
+#     perMachine: true
+#     allowToChangeInstallationDirectory: true
+
+# publish: null
