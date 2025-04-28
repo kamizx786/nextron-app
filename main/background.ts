@@ -1,5 +1,5 @@
 import path from "path";
-import { app, ipcMain } from "electron";
+import { app, ipcMain, Menu, dialog } from "electron";
 import serve from "electron-serve";
 import { createWindow } from "./helpers";
 import { spawn } from "child_process";
@@ -62,6 +62,46 @@ if (isProd) {
       preload: path.join(__dirname, "preload.js"),
     },
   });
+  const defaultMenu = Menu.getApplicationMenu();
+
+  const updatedMenuTemplate = [];
+
+  defaultMenu.items.forEach((item) => {
+    if (item.label === 'Help') {
+      updatedMenuTemplate.push({
+        label: 'Help',
+        submenu: [
+          {
+            label: '📘 Help & User Guide',
+            click: () => {
+              const message = `
+1. Open the application by double-clicking the app icon.
+2. Click on the "Upload Image" button to select a photo of a wheat leaf from your device.
+3. After uploading, click "Detect Disease" to start the analysis.
+4. Ensure only the leaf is visible, avoid backgrounds.
+5. Avoid blurry or low-resolution photos.
+
+Q: Can I use this on other crops?
+A: This app is optimized for wheat leaves only.
+              `;
+              dialog.showMessageBox({
+                type: 'info',
+                title: 'Help & User Guide',
+                message: 'How to Use the Application',
+                detail: message,
+              });
+            },
+          },
+        ],
+      });
+    } else {
+      // Push the existing menu item unchanged
+      updatedMenuTemplate.push(item);
+    }
+  });
+
+  const newMenu = Menu.buildFromTemplate(updatedMenuTemplate);
+  Menu.setApplicationMenu(newMenu);
 
   if (isProd) {
     await mainWindow.loadURL("app://./home");
