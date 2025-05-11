@@ -67,12 +67,12 @@ if (isProd) {
   const updatedMenuTemplate = [];
 
   defaultMenu.items.forEach((item) => {
-    if (item.label === 'Help') {
+    if (item.label === "Help") {
       updatedMenuTemplate.push({
-        label: 'Help',
+        label: "Help",
         submenu: [
           {
-            label: '📘 Help & User Guide',
+            label: "📘 Help & User Guide",
             click: () => {
               const message = `
 1. Open the application by double-clicking the app icon.
@@ -85,9 +85,9 @@ Q: Can I use this on other crops?
 A: This app is optimized for wheat leaves only.
               `;
               dialog.showMessageBox({
-                type: 'info',
-                title: 'Help & User Guide',
-                message: 'How to Use the Application',
+                type: "info",
+                title: "Help & User Guide",
+                message: "How to Use the Application",
                 detail: message,
               });
             },
@@ -120,6 +120,29 @@ ipcMain.on("message", async (event, arg) => {
   event.reply("message", `${arg} World!`);
 });
 
+// // In your main process file
+// import { InferenceService } from './service.mjs';
+
+// const inferenceService = new InferenceService();
+
+// // Initialize the service when the app starts
+// inferenceService.initialize().catch((err) => {
+//   console.error("Failed to initialize inference service:", err);
+// });
+
+// ipcMain.handle("predict-image", async (event, { imageData }) => {
+//   try {
+//     if (!imageData) {
+//       throw new Error("No image data provided");
+//     }
+//     const result = await inferenceService.predict(imageData);
+    
+//     return result;
+//   } catch (error) {
+//     console.error("Prediction failed:", error);
+//     throw new Error(`Prediction failed: ${error.message}`);
+//   }
+// });
 ipcMain.handle("predict-image", async (event, { imageData, fileName }) => {
   try {
     // Get the path to the ONNX prediction executable

@@ -2,23 +2,45 @@
 
 import type React from "react";
 import { useState } from "react";
-import { Card, CardContent } from "./ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import {
   Upload,
   ImagePlus,
   Loader2,
   AlertCircle,
   CheckCircle2,
+  TreesIcon as Plant,
+  Wheat,
+  Leaf,
+  Bug,
+  BarChartIcon,
 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { Button } from "./ui/button";
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
+import { Button } from "../components/ui/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
+import ConfidenceChart from "./chart";
 
-export default function ImagePredictor() {
+interface PredictionResult {
+  prediction: string;
+  confidence: number;
+  all_confidences: {
+    [key: string]: number;
+  };
+}
+
+export default function EnhancedImagePredictor() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [predictionResult, setPredictionResult] = useState<string | null>(null);
+  const [predictionResult, setPredictionResult] =
+    useState<PredictionResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("bars");
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -30,6 +52,34 @@ export default function ImagePredictor() {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
+  };
+
+  const class_names = [
+    "🌱 Healthy Wheat",
+    "🌾 Wheat Loose Smut",
+    "🍂 Leaf Rust",
+    "🦠 Crown and Root Rot",
+  ];
+
+  // Map class names to icons
+  const getIconForClass = (className: string) => {
+    if (className.includes("Healthy"))
+      return <Plant className="h-5 w-5 text-green-600" />;
+    if (className.includes("Smut"))
+      return <Wheat className="h-5 w-5 text-amber-600" />;
+    if (className.includes("Leaf Rust"))
+      return <Leaf className="h-5 w-5 text-orange-600" />;
+    if (className.includes("Crown and Root"))
+      return <Bug className="h-5 w-5 text-red-600" />;
+    return <Plant className="h-5 w-5 text-gray-600" />;
+  };
+
+  // Get color for confidence bar
+  const getColorForConfidence = (confidence: number) => {
+    if (confidence > 80) return "bg-green-500";
+    if (confidence > 50) return "bg-amber-500";
+    if (confidence > 30) return "bg-orange-500";
+    return "bg-red-500";
   };
 
   const handlePredict = async () => {
@@ -49,14 +99,39 @@ export default function ImagePredictor() {
       reader.onload = async () => {
         const base64Data = reader.result as string;
 
-        // Send to main process
-        const predictedClass = await window.ipc.invoke("predict-image", {
-          imageData: base64Data,
-          fileName: selectedFile.name,
-        });
+        try {
+          // Send to main process
+          const result = await window.ipc.invoke("predict-image", {
+            imageData: base64Data,
+            fileName: selectedFile.name,
+          });
 
-        setPredictionResult(predictedClass);
-        setIsProcessing(false);
+          // For demo purposes, using a mock result
+          // In production, use the actual result from the API
+          const mockResult = {
+            prediction: "Healthy Wheat",
+            confidence: 93.51,
+            all_confidences: {
+              "Healthy Wheat": 93.51,
+              "Wheat Loose Smut": 5.19,
+              "Leaf Rust": 0,
+              "Crown and Root Rot": 1.31,
+            },
+          };
+
+          // Parse the prediction result
+          const predictionData =
+            typeof result === "string"
+              ? JSON.parse(result)
+              : result || mockResult;
+
+          setPredictionResult(predictionData);
+        } catch (err) {
+          console.error("Error processing prediction:", err);
+          setError("Failed to process prediction result");
+        } finally {
+          setIsProcessing(false);
+        }
       };
 
       reader.onerror = () => {
@@ -101,7 +176,6 @@ export default function ImagePredictor() {
     }
   };
 
-  console.log(predictionResult);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <Card className="overflow-hidden">
@@ -209,14 +283,14 @@ export default function ImagePredictor() {
               <div className="flex items-start space-x-3">
                 <div
                   className={`p-2 rounded-full ${
-                    predictionResult.includes("Healthy Wheat")
+                    predictionResult?.prediction?.includes("Healthy")
                       ? "bg-green-100"
                       : "bg-amber-100"
                   }`}
                 >
                   <CheckCircle2
                     className={`h-6 w-6 ${
-                      predictionResult.includes("Healthy Wheat")
+                      predictionResult?.prediction?.includes("Healthy")
                         ? "text-green-600"
                         : "text-amber-600"
                     }`}
@@ -226,24 +300,83 @@ export default function ImagePredictor() {
                   <h3 className="text-lg font-semibold">Detection Result:</h3>
                   <p
                     className={`text-xl font-bold ${
-                      predictionResult.includes("Healthy Wheat")
+                      predictionResult?.prediction?.includes("Healthy")
                         ? "text-green-600"
                         : "text-amber-600"
                     }`}
                   >
-                    {predictionResult}
+                    {predictionResult?.prediction}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Confidence:{" "}
+                    <span className="font-semibold">
+                      {predictionResult?.confidence?.toFixed(2)}%
+                    </span>
                   </p>
                 </div>
               </div>
 
+              <Tabs
+                defaultValue="bars"
+                className="mt-6"
+                onValueChange={setActiveTab}
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="bars" className="flex items-center">
+                    <BarChartIcon className="h-4 w-4 mr-2" />
+                    Bar Chart
+                  </TabsTrigger>
+                  <TabsTrigger value="list">Detailed List</TabsTrigger>
+                </TabsList>
+                <TabsContent value="bars" className="mt-4">
+                  <ConfidenceChart
+                    confidences={predictionResult?.all_confidences}
+                  />
+                </TabsContent>
+                <TabsContent value="list" className="mt-4">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 className="font-semibold text-gray-800 mb-3">
+                      Confidence Analysis:
+                    </h3>
+                    <div className="space-y-3">
+                      {Object.entries(predictionResult.all_confidences)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([className, confidence]) => (
+                          <div key={className} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                {getIconForClass(className)}
+                                <span className="text-sm font-medium">
+                                  {className}
+                                </span>
+                              </div>
+                              <span className="text-sm font-semibold">
+                                {confidence.toFixed(2)}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                              <div
+                                className={`h-2.5 rounded-full ${getColorForConfidence(
+                                  confidence
+                                )}`}
+                                style={{ width: `${confidence}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
               {predictionResult &&
-                !predictionResult?.includes("Healthy Wheat") && (
+                !predictionResult?.prediction?.includes("Healthy") && (
                   <div className="mt-6 bg-amber-50 p-4 rounded-lg border border-amber-200">
                     <h3 className="font-semibold text-amber-800 mb-2">
                       Recommended Actions:
                     </h3>
                     <ul className="space-y-2">
-                      {getTreatmentSuggestions(predictionResult).map(
+                      {getTreatmentSuggestions(predictionResult?.prediction).map(
                         (suggestion, index) => (
                           <li key={index} className="flex items-start">
                             <span className="text-amber-600 mr-2">•</span>
@@ -259,7 +392,7 @@ export default function ImagePredictor() {
                   </div>
                 )}
 
-              {predictionResult.includes("Healthy Wheat") && (
+              {predictionResult?.prediction?.includes("Healthy") && (
                 <div className="mt-6 bg-green-50 p-4 rounded-lg border border-green-200">
                   <h3 className="font-semibold text-green-800 mb-2">
                     Good News!
