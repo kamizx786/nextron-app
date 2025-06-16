@@ -1,7 +1,7 @@
 {
   "private": true,
-  "name": "wheat-leaf-disease-detection",
-  "description": "Agri Wheat Leaf Disease Detection",
+  "name": "agri-wheat-disease-detection",
+  "description": "Agri Wheat  Disease Detection",
   "version": "1.0.0",
   "author": "Taiba riaz",
   "main": "app/background.js",
@@ -11,8 +11,8 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
-    "appId": "wheat_leaf",
-    "productName": "Agri Wheat Leaf Disease Detection",
+    "appId": "wheat",
+    "productName": "Agri Wheat  Disease Detection",
     "copyright": "Copyright © 2025",
     "directories": {
       "output": "dist",
